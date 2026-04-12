@@ -434,7 +434,7 @@
 				<div class="container">
 					<div class="row">
 						<div class="col-md-8 col-md-offset-2 text-center fh5co-heading animate-box">
-							<h2>Cuentanos algo bonito</h2>
+							<h2>Cuéntanos algo bonito</h2>
 						</div>
 					</div>
 					<div class="row">
@@ -569,10 +569,40 @@
 		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
 		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+		// Estado de autenticación — solo se cambia a true dentro de verificarPassword()
+		let _authenticated = false;
+
 		// Si se abre como archivo local, omitir contraseña automáticamente
 		if (!APP_CONFIG.REQUIRE_PASSWORD) {
+			_authenticated = true;
 			document.getElementById('password-overlay').style.display = 'none';
 			document.getElementById('page-content').style.display = 'block';
+		} else {
+			// MutationObserver: restaura el overlay si alguien lo manipula desde DevTools
+			const _overlay = document.getElementById('password-overlay');
+			const _content = document.getElementById('page-content');
+
+			const _lockObserver = new MutationObserver(function () {
+				if (!_authenticated) {
+					_overlay.style.cssText = 'display:flex !important; position:fixed; inset:0; z-index:9999;';
+					_content.style.cssText = 'display:none !important;';
+				}
+			});
+
+			// Vigila cambios de atributos en overlay y contenido
+			_lockObserver.observe(_overlay, { attributes: true });
+			_lockObserver.observe(_content, { attributes: true });
+
+			// Vigila si alguien elimina el overlay del DOM
+			new MutationObserver(function (mutations) {
+				mutations.forEach(function (m) {
+					m.removedNodes.forEach(function (node) {
+						if (node === _overlay && !_authenticated) {
+							document.body.prepend(_overlay);
+						}
+					});
+				});
+			}).observe(document.body, { childList: true, subtree: true });
 		}
 
 		// Verificación de contraseña
@@ -585,6 +615,7 @@
 			if (error || !data) { errEl.textContent = 'Error de conexión.'; return; }
 			const match = data.some(row => row.password === input);
 			if (match) {
+				_authenticated = true;
 				document.getElementById('password-overlay').style.display = 'none';
 				document.getElementById('page-content').style.display = 'block';
 			} else {
