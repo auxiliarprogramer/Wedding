@@ -5,5 +5,5 @@
 // ============================================================
 
 var APP_CONFIG = {
-    REQUIRE_PASSWORD: true
+    REQUIRE_PASSWORD: false
 };
