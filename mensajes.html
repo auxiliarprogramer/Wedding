@@ -6,6 +6,7 @@
 	<title>Mensajes — Erika &amp; Jhon</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="https://fonts.googleapis.com/css?family=Work+Sans:400,300,600&family=Sacramento" rel="stylesheet">
+	<link rel="stylesheet" href="css/password.css">
 	<style>
 		* { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -176,6 +177,16 @@
 </head>
 <body>
 
+	<!-- Password overlay -->
+	<div id="password-overlay">
+		<h2>Erika &amp; Jhon 💚</h2>
+		<p>Ingresa la contraseña para ver los mensajes</p>
+		<input type="password" id="pw-input" placeholder="Contraseña" autocomplete="off">
+		<button onclick="verificarPassword()">Entrar</button>
+		<span id="pw-error"></span>
+	</div>
+
+	<div id="page-content" style="display:none;">
 	<a href="index.html" class="back-link">← Volver</a>
 	<span class="counter" id="counter"></span>
 
@@ -192,6 +203,7 @@
 	<div class="dots" id="dots"></div>
 	<div class="progress-bar" id="progress-bar"></div>
 
+	<script src="js/config.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 	<script>
 		const SUPABASE_URL = 'https://pfhdmobkdmdckxshfbma.supabase.co';
@@ -282,7 +294,35 @@
 				.replace(/"/g, '&quot;');
 		}
 
-		loadMessages();
+		// Si la contraseña está deshabilitada en config.js, mostrar contenido directamente
+		if (!APP_CONFIG.REQUIRE_PASSWORD) {
+			document.getElementById('password-overlay').style.display = 'none';
+			document.getElementById('page-content').style.display = 'block';
+			loadMessages();
+		}
+
+		async function verificarPassword() {
+			const input = document.getElementById('pw-input').value.trim();
+			const errEl = document.getElementById('pw-error');
+			if (!input) return;
+			errEl.textContent = '';
+			const { data, error } = await sb.from('password').select('password');
+			if (error || !data) { errEl.textContent = 'Error de conexión.'; return; }
+			const match = data.some(row => row.password === input);
+			if (match) {
+				document.getElementById('password-overlay').style.display = 'none';
+				document.getElementById('page-content').style.display = 'block';
+				loadMessages();
+			} else {
+				errEl.textContent = 'Contraseña incorrecta.';
+				document.getElementById('pw-input').value = '';
+			}
+		}
+
+		document.getElementById('pw-input').addEventListener('keydown', function(e) {
+			if (e.key === 'Enter') verificarPassword();
+		});
 	</script>
+	</div><!-- /#page-content -->
 </body>
 </html>

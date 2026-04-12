@@ -33,6 +33,8 @@
 
 	<!-- Theme style  -->
 	<link rel="stylesheet" href="css/style.css">
+	<!-- Password overlay -->
+	<link rel="stylesheet" href="css/password.css">
 
 	<!-- Modernizr JS -->
 	<script src="js/modernizr-2.6.2.min.js"></script>
@@ -43,7 +45,17 @@
 
 	</head>
 	<body>
-		
+
+	<!-- Password overlay -->
+	<div id="password-overlay">
+		<h2>Erika &amp; Jhon</h2>
+		<p>Ingresa la contraseña para ver la invitación</p>
+		<input type="password" id="pw-input" placeholder="Contraseña" autocomplete="off">
+		<button onclick="verificarPassword()">Entrar</button>
+		<span id="pw-error"></span>
+	</div>
+
+	<div id="page-content" style="display:none;">
 	<div class="fh5co-loader"></div>
 	
 	<div id="page">
@@ -77,6 +89,7 @@
 						<h1>Erika &amp; Jhon</h1>
 						<h2>¡Nos casamos!</h2>
 							<div class="simply-countdown simply-countdown-one"></div>
+						<p style="margin-top:20px; font-size:16px; color:rgba(255,255,255,0.85); font-style:italic; letter-spacing:0.5px;">Que el amor sea la brújula que siempre los encuentre y los guíe</p>
 						</div>
 					</div>
 				</div>
@@ -366,7 +379,10 @@
 	<div class="gototop js-top">
 		<a href="#" class="js-gotop"><i class="icon-arrow-up"></i></a>
 	</div>
+	</div><!-- /#page-content -->
 	
+	<!-- Config -->
+	<script src="js/config.js"></script>
 	<!-- Supabase -->
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 	<!-- jQuery -->
@@ -413,6 +429,33 @@
 	const SUPABASE_URL = 'https://pfhdmobkdmdckxshfbma.supabase.co';
 	const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
 	const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+	// Si la contraseña está deshabilitada en config.js, mostrar contenido directamente
+	if (!APP_CONFIG.REQUIRE_PASSWORD) {
+		document.getElementById('password-overlay').style.display = 'none';
+		document.getElementById('page-content').style.display = 'block';
+	}
+
+	// Verificación de contraseña
+	async function verificarPassword() {
+		const input = document.getElementById('pw-input').value.trim();
+		const errEl = document.getElementById('pw-error');
+		if (!input) return;
+		errEl.textContent = '';
+		const { data, error } = await sb.from('password').select('password');
+		if (error || !data) { errEl.textContent = 'Error de conexión.'; return; }
+		const match = data.some(row => row.password === input);
+		if (match) {
+			document.getElementById('password-overlay').style.display = 'none';
+			document.getElementById('page-content').style.display = 'block';
+		} else {
+			errEl.textContent = 'Contraseña incorrecta.';
+			document.getElementById('pw-input').value = '';
+		}
+	}
+	document.getElementById('pw-input').addEventListener('keydown', function(e) {
+		if (e.key === 'Enter') verificarPassword();
+	});
 
 	// Formulario de confirmación de asistencia
 	document.getElementById('form-confirmacion').addEventListener('submit', async function(e) {
