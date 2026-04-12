@@ -555,7 +555,7 @@
 		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
 		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-		// Si la contraseña está deshabilitada en config.js, mostrar contenido directamente
+		// Si se abre como archivo local, omitir contraseña automáticamente
 		if (!APP_CONFIG.REQUIRE_PASSWORD) {
 			document.getElementById('password-overlay').style.display = 'none';
 			document.getElementById('page-content').style.display = 'block';

@@ -1,9 +1,10 @@
 // ============================================================
 //  Configuración global del sitio
-//  Cambia REQUIRE_PASSWORD a false para saltarte la contraseña
-//  mientras trabajas en local. Ponlo en true antes del evento.
+//  La contraseña se pide automáticamente cuando la página está
+//  siendo servida desde un servidor (http/https).
+//  Si se abre como archivo local (file://), se omite.
 // ============================================================
 
 var APP_CONFIG = {
-    REQUIRE_PASSWORD: false
+    REQUIRE_PASSWORD: window.location.protocol !== 'file:'
 };
