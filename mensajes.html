@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Mensajes — Erika &amp; Jhon</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="https://fonts.googleapis.com/css?family=Work+Sans:400,300,600&family=Sacramento" rel="stylesheet">
+	<style>
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body {
+			background: #2c2e1e;
+			font-family: 'Work Sans', Arial, sans-serif;
+			color: #fff;
+			height: 100vh;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+		}
+
+		/* Partículas de fondo */
+		body::before {
+			content: '';
+			position: fixed;
+			inset: 0;
+			background: 
+				radial-gradient(ellipse at 20% 50%, rgba(107,116,50,0.15) 0%, transparent 60%),
+				radial-gradient(ellipse at 80% 20%, rgba(107,116,50,0.1) 0%, transparent 50%);
+			pointer-events: none;
+		}
+
+		header {
+			text-align: center;
+			margin-bottom: 40px;
+			z-index: 1;
+		}
+
+		header .subtitle {
+			font-size: 13px;
+			text-transform: uppercase;
+			letter-spacing: 4px;
+			color: rgba(255,255,255,0.4);
+			margin-bottom: 10px;
+		}
+
+		header h1 {
+			font-family: 'Sacramento', serif;
+			font-size: 64px;
+			color: #a8b560;
+			line-height: 1.1;
+		}
+
+		header .sep {
+			width: 60px;
+			height: 1px;
+			background: rgba(255,255,255,0.2);
+			margin: 16px auto 0;
+		}
+
+		/* Carrusel */
+		.slider-wrap {
+			width: 100%;
+			max-width: 860px;
+			position: relative;
+			z-index: 1;
+			padding: 0 20px;
+		}
+
+		.slide {
+			display: none;
+			text-align: center;
+			animation: fadeSlide 0.8s ease;
+		}
+
+		.slide.active {
+			display: block;
+		}
+
+		@keyframes fadeSlide {
+			from { opacity: 0; transform: translateY(20px); }
+			to   { opacity: 1; transform: translateY(0); }
+		}
+
+		.slide .nombre {
+			font-size: 13px;
+			text-transform: uppercase;
+			letter-spacing: 3px;
+			color: #a8b560;
+			font-weight: 600;
+			margin-bottom: 20px;
+		}
+
+		.slide blockquote {
+			border: none;
+			padding: 0;
+			font-style: italic;
+			font-size: clamp(22px, 3vw, 36px);
+			line-height: 1.6;
+			color: rgba(255,255,255,0.88);
+			font-weight: 300;
+		}
+
+		blockquote::before { content: '\201C'; font-size: 1.3em; color: #a8b560; }
+		blockquote::after  { content: '\201D'; font-size: 1.3em; color: #a8b560; }
+
+		/* Paginación */
+		.dots {
+			display: flex;
+			justify-content: center;
+			gap: 8px;
+			margin-top: 40px;
+			z-index: 1;
+		}
+
+		.dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: rgba(255,255,255,0.2);
+			transition: background 0.3s, transform 0.3s;
+		}
+
+		.dot.active {
+			background: #a8b560;
+			transform: scale(1.3);
+		}
+
+		/* Barra de progreso */
+		.progress-bar {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			height: 3px;
+			background: #a8b560;
+			width: 0%;
+			transition: width linear;
+			z-index: 10;
+		}
+
+		/* Estado vacío */
+		.empty {
+			text-align: center;
+			color: rgba(255,255,255,0.4);
+			font-size: 20px;
+		}
+
+		/* Volver link */
+		.back-link {
+			position: fixed;
+			top: 20px;
+			left: 24px;
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 2px;
+			color: rgba(255,255,255,0.25);
+			text-decoration: none;
+			transition: color 0.3s;
+			z-index: 10;
+		}
+		.back-link:hover { color: rgba(255,255,255,0.7); }
+
+		/* Contador de slide */
+		.counter {
+			position: fixed;
+			top: 20px;
+			right: 24px;
+			font-size: 12px;
+			letter-spacing: 2px;
+			color: rgba(255,255,255,0.25);
+			z-index: 10;
+		}
+	</style>
+</head>
+<body>
+
+	<a href="index.html" class="back-link">← Volver</a>
+	<span class="counter" id="counter"></span>
+
+	<header>
+		<p class="subtitle">Mensajes para los novios</p>
+		<h1>Erika &amp; Jhon</h1>
+		<div class="sep"></div>
+	</header>
+
+	<div class="slider-wrap">
+		<div id="slides-container"></div>
+	</div>
+
+	<div class="dots" id="dots"></div>
+	<div class="progress-bar" id="progress-bar"></div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script>
+		const SUPABASE_URL = 'https://pfhdmobkdmdckxshfbma.supabase.co';
+		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
+		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+		const INTERVAL = 6000; // ms por slide
+
+		let slides = [];
+		let current = 0;
+		let timer = null;
+		let progressTimer = null;
+
+		async function loadMessages() {
+			const { data, error } = await sb.from('messages').select('Nombre, Mensaje').order('id', { ascending: true });
+			const container = document.getElementById('slides-container');
+			const dotsEl = document.getElementById('dots');
+
+			if (error || !data || data.length === 0) {
+				container.innerHTML = '<p class="empty">Aún no hay mensajes 💚</p>';
+				return;
+			}
+
+			slides = data;
+
+			// Crear slides
+			slides.forEach(function(msg, i) {
+				const div = document.createElement('div');
+				div.className = 'slide' + (i === 0 ? ' active' : '');
+				div.innerHTML = `
+					<p class="nombre">${escapeHtml(msg.Nombre)}</p>
+					<blockquote>${escapeHtml(msg.Mensaje)}</blockquote>
+				`;
+				container.appendChild(div);
+
+				// Dot
+				const dot = document.createElement('div');
+				dot.className = 'dot' + (i === 0 ? ' active' : '');
+				dotsEl.appendChild(dot);
+			});
+
+			updateCounter();
+			startSlider();
+		}
+
+		function showSlide(index) {
+			const allSlides = document.querySelectorAll('.slide');
+			const allDots = document.querySelectorAll('.dot');
+
+			allSlides[current].classList.remove('active');
+			allDots[current].classList.remove('active');
+
+			current = (index + slides.length) % slides.length;
+
+			allSlides[current].classList.add('active');
+			allDots[current].classList.add('active');
+			updateCounter();
+		}
+
+		function updateCounter() {
+			document.getElementById('counter').textContent = (current + 1) + ' / ' + slides.length;
+		}
+
+		function startSlider() {
+			clearInterval(timer);
+			timer = setInterval(function() {
+				showSlide(current + 1);
+				animateProgress();
+			}, INTERVAL);
+			animateProgress();
+		}
+
+		function animateProgress() {
+			const bar = document.getElementById('progress-bar');
+			bar.style.transition = 'none';
+			bar.style.width = '0%';
+			// Force reflow
+			bar.offsetWidth;
+			bar.style.transition = 'width ' + INTERVAL + 'ms linear';
+			bar.style.width = '100%';
+		}
+
+		function escapeHtml(str) {
+			return String(str)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
+		}
+
+		loadMessages();
+	</script>
+</body>
+</html>

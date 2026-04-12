@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Canciones — Erika &amp; Jhon</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="https://fonts.googleapis.com/css?family=Work+Sans:400,300,600,700&family=Sacramento" rel="stylesheet">
+	<style>
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body {
+			background: #1a1c10;
+			font-family: 'Work Sans', Arial, sans-serif;
+			color: #f0f0e8;
+			min-height: 100vh;
+		}
+
+		/* Header */
+		.page-header {
+			background: linear-gradient(135deg, #2c2e1e 0%, #3a3d20 100%);
+			padding: 30px 40px 25px;
+			border-bottom: 2px solid #6B7432;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			position: sticky;
+			top: 0;
+			z-index: 100;
+		}
+
+		.page-header h1 {
+			font-family: 'Sacramento', cursive;
+			font-size: 36px;
+			color: #a8b560;
+			font-weight: normal;
+		}
+
+		.page-header .subtitle {
+			font-size: 13px;
+			color: #888;
+			margin-top: 2px;
+		}
+
+		.back-link {
+			color: #a8b560;
+			text-decoration: none;
+			font-size: 14px;
+			border: 1px solid #6B7432;
+			padding: 6px 14px;
+			border-radius: 20px;
+			transition: background 0.2s;
+		}
+		.back-link:hover { background: rgba(107,116,50,0.2); }
+
+		/* Stats bar */
+		.stats-bar {
+			background: #2c2e1e;
+			padding: 12px 40px;
+			border-bottom: 1px solid #3a3d20;
+			display: flex;
+			align-items: center;
+			gap: 30px;
+			font-size: 13px;
+			color: #888;
+		}
+		.stats-bar .count {
+			color: #a8b560;
+			font-weight: 700;
+			font-size: 16px;
+		}
+
+		/* Refresh button */
+		.btn-refresh {
+			margin-left: auto;
+			background: none;
+			border: 1px solid #6B7432;
+			color: #a8b560;
+			font-size: 13px;
+			padding: 5px 14px;
+			border-radius: 20px;
+			cursor: pointer;
+			font-family: 'Work Sans', Arial, sans-serif;
+			transition: background 0.2s;
+		}
+		.btn-refresh:hover { background: rgba(107,116,50,0.2); }
+
+		/* Song list */
+		.song-list {
+			max-width: 900px;
+			margin: 30px auto;
+			padding: 0 20px 60px;
+		}
+
+		.song-item {
+			background: #2c2e1e;
+			border: 1px solid #3a3d20;
+			border-left: 4px solid #6B7432;
+			border-radius: 8px;
+			padding: 16px 20px;
+			margin-bottom: 12px;
+			display: flex;
+			align-items: center;
+			gap: 16px;
+			transition: border-color 0.2s, background 0.2s;
+		}
+		.song-item:hover {
+			border-color: #a8b560;
+			background: #343620;
+		}
+
+		.song-number {
+			font-size: 13px;
+			color: #6B7432;
+			font-weight: 700;
+			min-width: 28px;
+			text-align: right;
+		}
+
+		.song-icon {
+			font-size: 22px;
+			min-width: 28px;
+		}
+
+		.song-info {
+			flex: 1;
+		}
+
+		.song-title {
+			font-size: 16px;
+			font-weight: 600;
+			color: #f0f0e8;
+		}
+
+		.song-who {
+			font-size: 12px;
+			color: #888;
+			margin-top: 3px;
+		}
+		.song-who span {
+			color: #a8b560;
+		}
+
+		.song-link a {
+			color: #6B7432;
+			font-size: 12px;
+			text-decoration: none;
+			border: 1px solid #6B7432;
+			padding: 3px 10px;
+			border-radius: 12px;
+			white-space: nowrap;
+			transition: background 0.2s, color 0.2s;
+		}
+		.song-link a:hover {
+			background: #6B7432;
+			color: #fff;
+		}
+
+		/* Empty state */
+		.empty-state {
+			text-align: center;
+			padding: 80px 20px;
+			color: #555;
+		}
+		.empty-state .emoji { font-size: 48px; display: block; margin-bottom: 16px; }
+		.empty-state p { font-size: 16px; }
+
+		/* Loading */
+		.loading {
+			text-align: center;
+			padding: 80px 20px;
+			color: #6B7432;
+			font-size: 16px;
+		}
+
+		/* Scrollbar */
+		::-webkit-scrollbar { width: 6px; }
+		::-webkit-scrollbar-track { background: #1a1c10; }
+		::-webkit-scrollbar-thumb { background: #6B7432; border-radius: 3px; }
+	</style>
+</head>
+<body>
+
+	<div class="page-header">
+		<div>
+			<h1>🎵 Lista de Canciones</h1>
+			<div class="subtitle">Erika &amp; Jhon · 15.08.2026</div>
+		</div>
+		<a href="index.html" class="back-link">← Volver</a>
+	</div>
+
+	<div class="stats-bar">
+		<span>Total: <span class="count" id="total-count">—</span> canciones</span>
+		<button class="btn-refresh" onclick="cargarCanciones()">⟳ Actualizar</button>
+	</div>
+
+	<div class="song-list" id="song-list">
+		<div class="loading">Cargando canciones...</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script>
+		const SUPABASE_URL = 'https://pfhdmobkdmdckxshfbma.supabase.co';
+		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
+		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+		async function cargarCanciones() {
+			const listEl = document.getElementById('song-list');
+			const countEl = document.getElementById('total-count');
+			listEl.innerHTML = '<div class="loading">Cargando canciones...</div>';
+
+			const { data, error } = await sb
+				.from('songs')
+				.select('id, Nombre, Cancion, Url')
+				.order('id', { ascending: true });
+
+			if (error || !data) {
+				listEl.innerHTML = '<div class="empty-state"><span class="emoji">⚠️</span><p>Error al cargar las canciones.</p></div>';
+				return;
+			}
+
+			countEl.textContent = data.length;
+
+			if (data.length === 0) {
+				listEl.innerHTML = '<div class="empty-state"><span class="emoji">🎶</span><p>Aún no hay canciones en la lista.</p></div>';
+				return;
+			}
+
+			listEl.innerHTML = data.map((song, i) => {
+				const linkHtml = song.Url
+					? `<div class="song-link"><a href="${escapeHtml(song.Url)}" target="_blank" rel="noopener">Ver / Escuchar ↗</a></div>`
+					: '';
+				return `
+					<div class="song-item">
+						<div class="song-number">${i + 1}</div>
+						<div class="song-icon">🎵</div>
+						<div class="song-info">
+							<div class="song-title">${escapeHtml(song.Cancion)}</div>
+							<div class="song-who">Recomendada por <span>${escapeHtml(song.Nombre)}</span></div>
+						</div>
+						${linkHtml}
+					</div>`;
+			}).join('');
+		}
+
+		function escapeHtml(str) {
+			if (!str) return '';
+			return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+		}
+
+		cargarCanciones();
+	</script>
+</body>
+</html>
