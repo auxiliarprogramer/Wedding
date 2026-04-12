@@ -85,17 +85,21 @@ h1, h2, h3, h4, h5, h6, figure {
 }
 
 .fh5co-nav {
-  position: absolute;
+  position: fixed;
   top: 0;
   margin: 0;
   padding: 0;
   width: 100%;
-  padding: 40px 0;
+  padding: 5px;
   z-index: 1001;
+  background: rgba(30, 32, 18, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.3s;
 }
 @media screen and (max-width: 768px) {
   .fh5co-nav {
-    padding: 20px 0;
+    padding: 12px 0;
   }
 }
 .fh5co-nav #fh5co-logo {
