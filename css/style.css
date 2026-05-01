@@ -273,10 +273,27 @@ figure {
 .fh5co-bg {
   background-size: cover;
   background-position: top center;
+
   background-repeat: no-repeat;
   position: relative;
 }
 
+.bg-evento {
+  background-image: url("../images/eventos.jpg") !important;
+
+  @media screen and (max-width: 768px) {
+    background-position: left center !important;
+    background-image: url("../images/eventos_v2.jpg") !important;
+  }
+}
+
+.bg-invitacion {
+  background-image: url("../images/invitacion.jpg") !important;
+
+  @media screen and (max-width: 768px) {
+    background-image: url("../images/invitacion.jpg") !important;
+  }
+}
 .fh5co-bg {
   background-position: center center;
   width: 100%;
@@ -288,6 +305,7 @@ figure {
   height: 900px;
   background-size: cover;
   background-repeat: no-repeat;
+  background-position: center center !important;
   position: relative;
   width: 100%;
 }
@@ -1825,16 +1843,35 @@ form label {
 
 .fh5co-loader {
   position: fixed;
-  left: 0px;
-  top: 0px;
+  left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
   z-index: 9999;
-  background: url(../images/loader.gif) center no-repeat #fff;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fh5co-loader::after {
+  content: '';
+  width: 52px;
+  height: 52px;
+  border: 5px solid #e0ddd5;
+  border-top-color: #6B7432;
+  border-radius: 50%;
+  animation: fh5co-spin 0.75s linear infinite;
+}
+
+@keyframes fh5co-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .js .animate-box {
-  opacity: 0;
+  opacity: 1;
 }
 
 /*# sourceMappingURL=style.css.map */
