@@ -153,6 +153,44 @@
 			white-space: nowrap;
 		}
 
+		.guest-actions {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.guest-actions select {
+			background: #1f2016;
+			border: 1px solid #6B7432;
+			color: #f0f0e8;
+			border-radius: 6px;
+			padding: 6px 8px;
+			font-size: 13px;
+			outline: none;
+		}
+
+		.btn-save {
+			background: #6B7432;
+			border: 1px solid #6B7432;
+			color: #f0f0e8;
+			font-size: 12px;
+			font-weight: 700;
+			padding: 6px 10px;
+			border-radius: 6px;
+			cursor: pointer;
+			transition: opacity 0.2s;
+		}
+		.btn-save:hover { opacity: 0.9; }
+		.btn-save:disabled { opacity: 0.45; cursor: not-allowed; }
+
+		.guest-status {
+			font-size: 12px;
+			min-width: 65px;
+			color: #888;
+		}
+		.guest-status.ok { color: #a8b560; }
+		.guest-status.err { color: #ff9999; }
+
 		/* Summary total */
 		.summary-total {
 			max-width: 900px;
@@ -196,6 +234,17 @@
 		::-webkit-scrollbar { width: 6px; }
 		::-webkit-scrollbar-track { background: #1a1c10; }
 		::-webkit-scrollbar-thumb { background: #6B7432; border-radius: 3px; }
+
+		@media (max-width: 760px) {
+			.guest-item {
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+			.guest-actions {
+				width: 100%;
+				justify-content: flex-end;
+			}
+		}
 	</style>
 </head>
 <body>
@@ -240,6 +289,7 @@
 		const SUPABASE_URL = 'https://pfhdmobkdmdckxshfbma.supabase.co';
 		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
 		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+		let _updatingIds = new Set();
 
 		function escapeHtml(str) {
 			if (!str) return '';
@@ -262,7 +312,7 @@
 
 			const { data, error } = await sb
 				.from('invitaciones_boda')
-				.select('nombre, asistentes_confirmados')
+				.select('id, nombre, asistentes_confirmados, cupos_total')
 				.neq('asistentes_confirmados', 0)
 				.order('nombre', { ascending: true });
 
@@ -284,18 +334,91 @@
 			totalPersonasEl.textContent = total;
 			summaryEl.style.display = 'flex';
 
-			listEl.innerHTML = data.map((row, i) => `
+			listEl.innerHTML = data.map((row, i) => {
+				const current = Number(row.asistentes_confirmados) || 0;
+				const maxCupos = Math.max(Number(row.cupos_total) || current || 1, 1);
+				const options = Array.from({ length: maxCupos }, (_, idx) => {
+					const val = idx + 1;
+					const selected = val === current ? ' selected' : '';
+					return `<option value="${val}"${selected}>${val}</option>`;
+				}).join('');
+
+				return `
 				<div class="guest-item">
 					<div class="guest-number">${i + 1}</div>
 					<div class="guest-icon">👤</div>
 					<div class="guest-info">
 						<div class="guest-name">${escapeHtml(row.nombre)}</div>
-						<div class="guest-count-label">Asistentes confirmados: <span>${escapeHtml(String(row.asistentes_confirmados))}</span></div>
+						<div class="guest-count-label">Asistentes confirmados: <span>${escapeHtml(String(row.asistentes_confirmados))}</span> de ${escapeHtml(String(maxCupos))} cupos</div>
 					</div>
 					<div class="guest-badge">${escapeHtml(String(row.asistentes_confirmados))} 🎉</div>
+					<div class="guest-actions">
+						<select class="guest-select" id="sel-${row.id}" data-id="${row.id}" data-current="${current}" aria-label="Asistentes de ${escapeHtml(row.nombre)}">
+							${options}
+						</select>
+						<button class="btn-save" data-id="${row.id}" data-name="${escapeHtml(row.nombre)}">Guardar</button>
+						<span class="guest-status" id="st-${row.id}"></span>
+					</div>
 				</div>
-			`).join('');
+			`;
+			}).join('');
 		}
+
+		async function actualizarAsistentes(id) {
+			if (!id || _updatingIds.has(id)) return;
+
+			const selectEl = document.getElementById(`sel-${id}`);
+			const statusEl = document.getElementById(`st-${id}`);
+			if (!selectEl || !statusEl) return;
+
+			const nuevoValor = Number(selectEl.value);
+			const valorActual = Number(selectEl.getAttribute('data-current'));
+
+			if (nuevoValor === valorActual) {
+				statusEl.className = 'guest-status';
+				statusEl.textContent = 'Sin cambios';
+				setTimeout(() => { statusEl.textContent = ''; }, 1200);
+				return;
+			}
+
+			_updatingIds.add(id);
+			const btnEl = document.querySelector(`.btn-save[data-id="${id}"]`);
+			if (btnEl) btnEl.disabled = true;
+
+			statusEl.className = 'guest-status';
+			statusEl.textContent = 'Guardando...';
+
+			const { error } = await sb
+				.from('invitaciones_boda')
+				.update({
+					asistentes_confirmados: nuevoValor,
+					confirmado: nuevoValor > 0,
+					fecha_confirmacion: new Date().toISOString()
+				})
+				.eq('id', id);
+
+			_updatingIds.delete(id);
+			if (btnEl) btnEl.disabled = false;
+
+			if (error) {
+				statusEl.className = 'guest-status err';
+				statusEl.textContent = 'Error';
+				return;
+			}
+
+			selectEl.setAttribute('data-current', String(nuevoValor));
+			statusEl.className = 'guest-status ok';
+			statusEl.textContent = 'Guardado';
+
+			await cargarConfirmados();
+		}
+
+		document.addEventListener('click', function (e) {
+			const btn = e.target.closest('.btn-save');
+			if (!btn) return;
+			const id = btn.getAttribute('data-id');
+			actualizarAsistentes(id);
+		});
 
 		// ── Password protection ──────────────────────────────────────
 		let _authenticated = false;
