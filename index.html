@@ -490,11 +490,12 @@
 								<!-- Selector de asistentes: visible solo con token -->
 								<div id="conf-cupos-group" style="display:none; margin-bottom:15px;">
 									<label for="conf-asistentes" style="display:block; color:#fff; margin-bottom:6px;">¿Cuántos asisten? (incluye tu lugar)</label>
-									<select id="conf-asistentes" class="form-control" style="width:auto; display:inline-block; min-width:80px;"></select>
+									<select id="conf-asistentes" class="form-control" style="width:auto; display:inline-block; min-width:80px; background:#fff; color:#222; border:1px solid rgba(0,0,0,0.2);">
+									</select>
 								</div>
-								<button type="submit" data-asistencia="true" class="btn btn-default"
+								<button type="submit" data-asistencia="true" class="btn btn-default" disabled
 									style="margin-right:10px;">Sí, asistiré 💚</button>
-								<button type="submit" data-asistencia="false" class="btn btn-default">No podré asistir</button>
+								<button type="submit" data-asistencia="false" class="btn btn-default" disabled>No podré asistir</button>
 								<p id="conf-msg" style="margin-top:15px; display:none;"></p>
 							</form>
 						</div>
@@ -710,13 +711,20 @@
 
 			// Mostrar selector de asistentes según cupos disponibles
 			const select = document.getElementById('conf-asistentes');
+			select.innerHTML = '';
 			for (let i = 1; i <= data.cupos_total; i++) {
 				const opt = document.createElement('option');
 				opt.value = i;
 				opt.textContent = i;
 				select.appendChild(opt);
 			}
+			if (select.options.length) {
+				select.value = '1';
+			}
 			document.getElementById('conf-cupos-group').style.display = 'block';
+			document.querySelectorAll('#form-confirmacion button[type="submit"]').forEach(function (button) {
+				button.disabled = false;
+			});
 		}
 
 		// Leer token desde la URL (?token=xxxx o #token=xxxx)
@@ -743,8 +751,9 @@
 
 			if (_invitacion) {
 				// Confirmar usando la tabla invitaciones_boda
+				const asistentesElegidos = parseInt(document.getElementById('conf-asistentes').value, 10);
 				const asistentesConfirmados = asistencia
-					? parseInt(document.getElementById('conf-asistentes').value, 10)
+					? Math.max(1, Number.isFinite(asistentesElegidos) ? asistentesElegidos : 0)
 					: 0;
 				const { error } = await sb
 					.from('invitaciones_boda')

@@ -71,9 +71,8 @@
 			font-size: 16px;
 		}
 
-		/* Refresh button */
-		.btn-refresh {
-			margin-left: auto;
+		/* Refresh button and sort buttons */
+		.btn-refresh, .btn-sort {
 			background: none;
 			border: 1px solid #6B7432;
 			color: #a8b560;
@@ -82,9 +81,13 @@
 			border-radius: 20px;
 			cursor: pointer;
 			font-family: 'Work Sans', Arial, sans-serif;
-			transition: background 0.2s;
+			transition: background 0.2s, border-color 0.2s;
 		}
+		.btn-refresh { margin-left: auto; }
 		.btn-refresh:hover { background: rgba(107,116,50,0.2); }
+		.btn-sort { margin-left: 8px; }
+		.btn-sort:hover { background: rgba(107,116,50,0.2); }
+		.btn-sort.active { background: rgba(107,116,50,0.4); border-color: #a8b560; }
 
 		/* Guest list */
 		.guest-list {
@@ -140,6 +143,15 @@
 		}
 		.guest-count-label span {
 			color: #a8b560;
+		}
+
+		.guest-date-label {
+			font-size: 12px;
+			color: #888;
+			margin-top: 3px;
+		}
+		.guest-date-label span {
+			color: #f0f0e8;
 		}
 
 		.guest-badge {
@@ -270,6 +282,8 @@
 	<div class="stats-bar">
 		<span>Grupos confirmados: <span class="count" id="groups-count">—</span></span>
 		<span>Total asistentes: <span class="count" id="total-count">—</span></span>
+		<button class="btn-sort active" id="btn-sort-nombre" onclick="setSortOrder('nombre')">Nombre</button>
+		<button class="btn-sort" id="btn-sort-fecha" onclick="setSortOrder('fecha')">Fecha</button>
 		<button class="btn-refresh" onclick="cargarConfirmados()">⟳ Actualizar</button>
 	</div>
 
@@ -290,6 +304,7 @@
 		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
 		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 		let _updatingIds = new Set();
+		let _sortOrder = 'nombre'; // 'nombre' o 'fecha'
 
 		function escapeHtml(str) {
 			if (!str) return '';
@@ -298,6 +313,13 @@
 				.replace(/</g, '&lt;')
 				.replace(/>/g, '&gt;')
 				.replace(/"/g, '&quot;');
+		}
+
+		function setSortOrder(order) {
+			_sortOrder = order;
+			document.getElementById('btn-sort-nombre').classList.toggle('active', order === 'nombre');
+			document.getElementById('btn-sort-fecha').classList.toggle('active', order === 'fecha');
+			cargarConfirmados();
 		}
 
 		async function cargarConfirmados() {
@@ -310,11 +332,12 @@
 			listEl.innerHTML = '<div class="loading">Cargando confirmaciones...</div>';
 			summaryEl.style.display = 'none';
 
+			const orderBy = _sortOrder === 'fecha' ? 'fecha_confirmacion' : 'nombre';
 			const { data, error } = await sb
 				.from('invitaciones_boda')
-				.select('id, nombre, asistentes_confirmados, cupos_total')
+				.select('id, nombre, asistentes_confirmados, cupos_total, fecha_confirmacion')
 				.neq('asistentes_confirmados', 0)
-				.order('nombre', { ascending: true });
+				.order(orderBy, { ascending: _sortOrder === 'nombre' });
 
 			if (error || !data) {
 				listEl.innerHTML = '<div class="empty-state"><span class="emoji">⚠️</span><p>Error al cargar las confirmaciones.</p></div>';
@@ -337,6 +360,14 @@
 			listEl.innerHTML = data.map((row, i) => {
 				const current = Number(row.asistentes_confirmados) || 0;
 				const maxCupos = Math.max(Number(row.cupos_total) || current || 1, 1);
+				const fechaConfirmacion = row.fecha_confirmacion
+					? new Intl.DateTimeFormat('es-CO', {
+						timeZone: 'America/Bogota',
+						day: '2-digit',
+						month: 'long',
+						year: 'numeric'
+					}).format(new Date(row.fecha_confirmacion))
+					: '';
 				const options = Array.from({ length: maxCupos }, (_, idx) => {
 					const val = idx + 1;
 					const selected = val === current ? ' selected' : '';
@@ -350,6 +381,7 @@
 					<div class="guest-info">
 						<div class="guest-name">${escapeHtml(row.nombre)}</div>
 						<div class="guest-count-label">Asistentes confirmados: <span>${escapeHtml(String(row.asistentes_confirmados))}</span> de ${escapeHtml(String(maxCupos))} cupos</div>
+						${fechaConfirmacion ? `<div class="guest-date-label">Confirmó el <span>${escapeHtml(fechaConfirmacion)}</span></div>` : ''}
 					</div>
 					<div class="guest-badge">${escapeHtml(String(row.asistentes_confirmados))} 🎉</div>
 					<div class="guest-actions">

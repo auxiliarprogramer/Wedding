@@ -14,12 +14,15 @@
 			background: #2c2e1e;
 			font-family: 'Work Sans', Arial, sans-serif;
 			color: #fff;
-			height: 100vh;
-			overflow: hidden;
+			min-height: 100vh;
+			height: auto;
+			overflow-x: hidden;
+			overflow-y: auto;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
-			justify-content: center;
+			justify-content: flex-start;
+			padding: 40px 0 30px;
 		}
 
 		/* Partículas de fondo */
@@ -54,7 +57,7 @@
 			line-height: 1.1;
 		}
 
-		header .sep {
+		.sep {
 			width: 60px;
 			height: 1px;
 			background: rgba(255,255,255,0.2);
@@ -64,7 +67,7 @@
 		/* Carrusel */
 		.slider-wrap {
 			width: 100%;
-			max-width: 860px;
+			max-width: 100%;
 			position: relative;
 			z-index: 1;
 			padding: 0 20px;
@@ -74,6 +77,7 @@
 			display: none;
 			text-align: center;
 			animation: fadeSlide 0.8s ease;
+			padding: 10px 0 20px;
 		}
 
 		.slide.active {
@@ -96,12 +100,18 @@
 
 		.slide blockquote {
 			border: none;
-			padding: 0;
+			padding: 0 18px;
 			font-style: italic;
 			font-size: clamp(22px, 3vw, 36px);
 			line-height: 1.6;
 			color: rgba(255,255,255,0.88);
 			font-weight: 300;
+			display: block;
+			width: min(100%, 100%);
+			max-width: 100%;
+			margin: 0 auto;
+			overflow-wrap: anywhere;
+			word-break: normal;
 		}
 
 		blockquote::before { content: '\201C'; font-size: 1.3em; color: #a8b560; }
@@ -114,6 +124,44 @@
 			gap: 8px;
 			margin-top: 40px;
 			z-index: 1;
+		}
+
+		.controls {
+			display: flex;
+			justify-content: center;
+			gap: 10px;
+			margin-top: 18px;
+			z-index: 1;
+			flex-wrap: wrap;
+		}
+
+		.control-btn {
+			background: rgba(255,255,255,0.08);
+			border: 1px solid rgba(255,255,255,0.18);
+			color: #fff;
+			border-radius: 999px;
+			padding: 10px 16px;
+			font-family: 'Work Sans', Arial, sans-serif;
+			font-size: 13px;
+			letter-spacing: 1px;
+			text-transform: uppercase;
+			cursor: pointer;
+			transition: background 0.2s, transform 0.2s, border-color 0.2s;
+		}
+
+		.control-btn:hover {
+			background: rgba(168,181,96,0.18);
+			border-color: rgba(168,181,96,0.6);
+			transform: translateY(-1px);
+		}
+
+		.control-btn:active {
+			transform: translateY(0);
+		}
+
+		.control-btn.primary {
+			background: rgba(168,181,96,0.18);
+			border-color: rgba(168,181,96,0.65);
 		}
 
 		.dot {
@@ -195,10 +243,18 @@
 		<h1>Erika &amp; Jhon</h1>
 		<div class="sep"></div>
 	</header>
+	<div class="controls" aria-label="Controles de mensajes">
+		<button type="button" class="control-btn" id="btn-prev">⟵ Anterior</button>
+		<button type="button" class="control-btn primary" id="btn-toggle">⏸ Pausar</button>
+		<button type="button" class="control-btn" id="btn-next">Siguiente ⟶</button>
+	</div>		
+	<div class="sep"></div>
 
 	<div class="slider-wrap">
 		<div id="slides-container"></div>
 	</div>
+
+
 
 	<div class="dots" id="dots"></div>
 	<div class="progress-bar" id="progress-bar"></div>
@@ -210,12 +266,20 @@
 		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
 		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-		const INTERVAL = 6000; // ms por slide
+		const MIN_INTERVAL = 7000;
+		const MAX_INTERVAL = 18000;
 
 		let slides = [];
 		let current = 0;
 		let timer = null;
 		let progressTimer = null;
+		let currentInterval = MIN_INTERVAL;
+		let isPaused = false;
+
+		function getSlideInterval(msg) {
+			const text = `${msg.Nombre || ''} ${msg.Mensaje || ''}`.trim();
+			return Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, 4200 + (text.length * 55)));
+		}
 
 		async function loadMessages() {
 			const { data, error } = await sb.from('messages').select('Nombre, Mensaje').order('id', { ascending: true });
@@ -227,7 +291,9 @@
 				return;
 			}
 
-			slides = data;
+			slides = data.map(function (msg) {
+				return Object.assign({}, msg, { interval: getSlideInterval(msg) });
+			});
 
 			// Crear slides
 			slides.forEach(function(msg, i) {
@@ -257,10 +323,46 @@
 			allDots[current].classList.remove('active');
 
 			current = (index + slides.length) % slides.length;
+			currentInterval = slides[current] && slides[current].interval ? slides[current].interval : MIN_INTERVAL;
 
 			allSlides[current].classList.add('active');
 			allDots[current].classList.add('active');
 			updateCounter();
+		}
+
+		function updateControls() {
+			const toggleBtn = document.getElementById('btn-toggle');
+			if (toggleBtn) {
+				toggleBtn.textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
+				toggleBtn.classList.toggle('primary', !isPaused);
+			}
+		}
+
+		function stopSlider() {
+			clearTimeout(timer);
+			timer = null;
+		}
+
+		function scheduleNextSlide() {
+			stopSlider();
+			if (isPaused || slides.length <= 1) {
+				return;
+			}
+
+			currentInterval = slides[current] && slides[current].interval ? slides[current].interval : MIN_INTERVAL;
+			animateProgress();
+			timer = setTimeout(function () {
+				showSlide(current + 1);
+				scheduleNextSlide();
+			}, currentInterval);
+		}
+
+		function goToSlide(index, restartAuto = true) {
+			if (!slides.length) return;
+			showSlide(index);
+			if (restartAuto && !isPaused) {
+				scheduleNextSlide();
+			}
 		}
 
 		function updateCounter() {
@@ -268,12 +370,8 @@
 		}
 
 		function startSlider() {
-			clearInterval(timer);
-			timer = setInterval(function() {
-				showSlide(current + 1);
-				animateProgress();
-			}, INTERVAL);
-			animateProgress();
+			updateControls();
+			scheduleNextSlide();
 		}
 
 		function animateProgress() {
@@ -282,7 +380,7 @@
 			bar.style.width = '0%';
 			// Force reflow
 			bar.offsetWidth;
-			bar.style.transition = 'width ' + INTERVAL + 'ms linear';
+			bar.style.transition = 'width ' + currentInterval + 'ms linear';
 			bar.style.width = '100%';
 		}
 
@@ -300,6 +398,24 @@
 			document.getElementById('page-content').style.display = 'block';
 			loadMessages();
 		}
+
+		document.getElementById('btn-prev').addEventListener('click', function () {
+			goToSlide(current - 1, true);
+		});
+
+		document.getElementById('btn-next').addEventListener('click', function () {
+			goToSlide(current + 1, true);
+		});
+
+		document.getElementById('btn-toggle').addEventListener('click', function () {
+			isPaused = !isPaused;
+			updateControls();
+			if (isPaused) {
+				stopSlider();
+			} else {
+				scheduleNextSlide();
+			}
+		});
 
 		async function verificarPassword() {
 			const input = document.getElementById('pw-input').value.trim();
