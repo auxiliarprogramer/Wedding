@@ -248,14 +248,27 @@
 		::-webkit-scrollbar-thumb { background: #6B7432; border-radius: 3px; }
 
 		@media (max-width: 760px) {
+			.page-header { padding: 18px 16px 14px; }
+			.stats-bar { padding: 12px 16px; gap: 12px; flex-wrap: wrap; }
+			.stats-bar .btn-sort, .stats-bar .btn-refresh { margin-left: 0; }
+			.guest-list { padding: 0 12px 60px; }
 			.guest-item {
 				flex-wrap: wrap;
 				gap: 10px;
+				padding: 12px;
 			}
+			.guest-number { min-width: 22px; }
+			.guest-icon { min-width: 22px; }
 			.guest-actions {
 				width: 100%;
 				justify-content: flex-end;
+				gap: 8px;
 			}
+			.guest-actions select { max-width: 110px; }
+			.guest-badge { white-space: normal; padding: 4px 10px; font-size: 12px; }
+			.btn-refresh, .btn-sort { padding: 5px 10px; font-size: 12px; }
+			.summary-total { padding: 0 12px; justify-content: center; }
+			body { padding-bottom: 20px; }
 		}
 	</style>
 </head>
