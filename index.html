@@ -59,6 +59,14 @@
 		<span id="pw-error"></span>
 	</div>
 
+	<!-- Overlay para token inválido -->
+	<div id="invalid-token-overlay" style="display:none; position:fixed; inset:0; z-index:10000; background:#f5f0e8; align-items:center; justify-content:center; padding:20px; text-align:center;">
+		<div style="max-width:460px; width:100%; background:#fff; border-radius:12px; padding:30px 24px; box-shadow:0 8px 30px rgba(0,0,0,0.12); border-left:4px solid #6B7432;">
+			<h2 style="margin:0 0 10px; color:#6B7432;">Invitación inválida</h2>
+			<p style="margin:0 0 18px; color:#555; line-height:1.6;">El enlace que abriste no es válido o ya no está disponible.</p>
+		</div>
+	</div>
+
 	<div id="page-content" style="display:none;">
 		<div class="fh5co-loader"></div>
 
@@ -607,6 +615,12 @@
 		// Estado de autenticación — solo se cambia a true dentro de verificarPassword()
 		let _authenticated = false;
 
+		function mostrarInvitacionInvalida() {
+			document.getElementById('password-overlay').style.display = 'none';
+			document.getElementById('page-content').style.display = 'none';
+			document.getElementById('invalid-token-overlay').style.display = 'flex';
+		}
+
 		// Si se abre como archivo local, omitir contraseña automáticamente
 		if (!APP_CONFIG.REQUIRE_PASSWORD) {
 			_authenticated = true;
@@ -666,13 +680,11 @@
 		let _invitacion = null; // datos de la fila en invitaciones_boda
 
 		async function cargarInvitacion(token) {
-			// Mostrar la página de inmediato con spinner en la sección de confirmación
+			// Para enlaces con token: validar primero y solo mostrar contenido si es válido
 			_authenticated = true;
 			document.getElementById('password-overlay').style.display = 'none';
-			document.getElementById('page-content').style.display = 'block';
-			document.getElementById('fh5co-started').style.display = 'block';
-			document.getElementById('fh5co-location').style.display = 'none';
-			document.getElementById('inv-loading').style.display = 'block';
+			document.getElementById('page-content').style.display = 'none';
+			document.getElementById('invalid-token-overlay').style.display = 'none';
 
 			const { data, error } = await sb
 				.from('invitaciones_boda')
@@ -680,16 +692,14 @@
 				.eq('token', token)
 				.single();
 
-			document.getElementById('inv-loading').style.display = 'none';
-
 			if (error || !data) {
-				// Token inválido → ocultar sección y mostrar nada
-				document.getElementById('fh5co-started').style.display = 'none';
-				document.getElementById('fh5co-location').style.display = 'none';
+				mostrarInvitacionInvalida();
 				return;
 			}
 
 			_invitacion = data;
+			document.getElementById('page-content').style.display = 'block';
+			document.getElementById('fh5co-started').style.display = 'block';
 
 			// Mostrar banner
 			document.getElementById('inv-nombre').textContent = data.nombre;
