@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>¿En qué mesa estás? — Erika &amp; Jhon</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#2c2e1e">
+	<link href="https://fonts.googleapis.com/css?family=Work+Sans:400,300,600,700&family=Sacramento" rel="stylesheet">
+	<style>
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body {
+			background: #2c2e1e;
+			font-family: 'Work Sans', Arial, sans-serif;
+			color: #f0f0e8;
+			min-height: 100vh;
+			overflow-x: hidden;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 40px 20px 40px;
+		}
+
+		body::before {
+			content: '';
+			position: fixed;
+			inset: 0;
+			background:
+				radial-gradient(ellipse at 20% 50%, rgba(107,116,50,0.15) 0%, transparent 60%),
+				radial-gradient(ellipse at 80% 20%, rgba(107,116,50,0.1) 0%, transparent 50%);
+			pointer-events: none;
+		}
+
+		.page {
+			width: 100%;
+			max-width: 440px;
+			position: relative;
+			z-index: 1;
+			display: flex;
+			flex-direction: column;
+			flex: 1;
+		}
+
+		.top-bar {
+			display: flex;
+			justify-content: flex-end;
+			margin-bottom: 20px;
+		}
+
+		.back-link {
+			color: #a8b560;
+			text-decoration: none;
+			font-size: 14px;
+			border: 1px solid #6B7432;
+			padding: 6px 14px;
+			border-radius: 20px;
+			transition: background 0.2s;
+		}
+		.back-link:hover { background: rgba(107,116,50,0.2); }
+
+		header {
+			text-align: center;
+			margin-bottom: 36px;
+		}
+
+		header .subtitle {
+			font-size: 13px;
+			text-transform: uppercase;
+			letter-spacing: 4px;
+			color: rgba(255,255,255,0.4);
+			margin-bottom: 10px;
+		}
+
+		header h1 {
+			font-family: 'Sacramento', serif;
+			font-size: clamp(42px, 12vw, 56px);
+			color: #a8b560;
+			line-height: 1.1;
+			font-weight: normal;
+		}
+
+		.sep {
+			width: 60px;
+			height: 1px;
+			background: rgba(255,255,255,0.2);
+			margin: 16px auto 0;
+		}
+
+		.lead {
+			text-align: center;
+			font-size: 14px;
+			color: #888;
+			margin-bottom: 28px;
+			line-height: 1.5;
+		}
+
+		.search-wrap {
+			position: relative;
+		}
+
+		.search-wrap label {
+			display: block;
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 2px;
+			color: rgba(255,255,255,0.4);
+			margin-bottom: 10px;
+			text-align: center;
+		}
+
+		#guest-search {
+			width: 100%;
+			font-family: inherit;
+			font-size: 16px;
+			padding: 12px 18px;
+			background: #1a1c10;
+			border: 1px solid #6B7432;
+			border-radius: 6px;
+			color: #f0f0e8;
+			outline: none;
+			text-align: center;
+			transition: border-color 0.2s;
+			-webkit-appearance: none;
+		}
+
+		#guest-search:focus {
+			border-color: #a8b560;
+		}
+
+		#guest-search::placeholder {
+			color: #555;
+		}
+
+		#guest-search:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.suggestions {
+			list-style: none;
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: calc(100% + 6px);
+			background: #2c2e1e;
+			border: 1px solid #3a3d20;
+			border-radius: 8px;
+			box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+			max-height: 280px;
+			overflow-y: auto;
+			z-index: 20;
+			display: none;
+		}
+
+		.suggestions.open { display: block; }
+
+		.suggestions li {
+			padding: 14px 16px;
+			cursor: pointer;
+			border-bottom: 1px solid #3a3d20;
+			border-left: 4px solid transparent;
+			font-size: 15px;
+			color: #f0f0e8;
+			transition: background 0.15s, border-color 0.15s;
+		}
+
+		.suggestions li:last-child { border-bottom: none; }
+
+		.suggestions li:hover,
+		.suggestions li.active {
+			background: #343620;
+			border-left-color: #6B7432;
+		}
+
+		.suggestions li .hint {
+			display: block;
+			font-size: 12px;
+			color: #a8b560;
+			margin-top: 3px;
+		}
+
+		.status {
+			text-align: center;
+			margin-top: 20px;
+			font-size: 14px;
+			color: #888;
+			min-height: 1.4em;
+		}
+
+		.status.error { color: #ff9999; }
+		.status.loading { color: #6B7432; }
+
+		.result {
+			display: none;
+			margin-top: 28px;
+			text-align: center;
+			animation: fadeSlide 0.45s ease;
+		}
+
+		.result.visible { display: block; }
+
+		@keyframes fadeSlide {
+			from { opacity: 0; transform: translateY(16px); }
+			to   { opacity: 1; transform: translateY(0); }
+		}
+
+		.result .guest-label {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 3px;
+			color: rgba(255,255,255,0.4);
+			margin-bottom: 8px;
+		}
+
+		.result .guest-name {
+			font-size: 18px;
+			font-weight: 600;
+			margin-bottom: 20px;
+			color: #f0f0e8;
+		}
+
+		.result .mesa-card {
+			background: #1a1c10;
+			border: 1px solid #3a3d20;
+			border-left: 4px solid #6B7432;
+			border-radius: 8px;
+			padding: 28px 24px;
+			transition: border-color 0.2s;
+		}
+
+		.result .mesa-label {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 3px;
+			color: #a8b560;
+			font-weight: 600;
+			margin-bottom: 10px;
+		}
+
+		.result .mesa-number {
+			font-family: 'Sacramento', serif;
+			font-size: clamp(56px, 18vw, 72px);
+			font-weight: normal;
+			line-height: 1;
+			color: #a8b560;
+		}
+
+		.btn-clear {
+			display: none;
+			margin: 24px auto 0;
+			background: none;
+			border: 1px solid #6B7432;
+			color: #a8b560;
+			font-family: 'Work Sans', Arial, sans-serif;
+			font-size: 13px;
+			padding: 8px 18px;
+			border-radius: 20px;
+			cursor: pointer;
+			transition: background 0.2s;
+		}
+
+		.btn-clear.visible { display: inline-block; }
+		.btn-clear:hover { background: rgba(107,116,50,0.2); }
+
+		.footer-note {
+			margin-top: auto;
+			padding-top: 48px;
+			text-align: center;
+			font-size: 12px;
+			color: #555;
+		}
+
+		::-webkit-scrollbar { width: 6px; }
+		::-webkit-scrollbar-track { background: #1a1c10; }
+		::-webkit-scrollbar-thumb { background: #6B7432; border-radius: 3px; }
+
+		@media (max-width: 480px) {
+			body { padding: 24px 16px 32px; }
+			header h1 { font-size: 42px; }
+		}
+	</style>
+</head>
+<body>
+	<div class="page">
+		<div class="top-bar">
+			<a href="index.html" class="back-link">← Volver</a>
+		</div>
+
+		<header>
+			<div class="subtitle">Erika &amp; Jhon · 15.08.2026</div>
+			<h1>¿En qué mesa estás?</h1>
+			<div class="sep"></div>
+		</header>
+
+		<p class="lead">Escribe tu nombre o el de la invitación.</p>
+
+		<div class="search-wrap">
+			<label for="guest-search">Buscar</label>
+			<input
+				type="search"
+				id="guest-search"
+				placeholder="Ej. Jhon"
+				autocomplete="off"
+				autocapitalize="words"
+				spellcheck="false"
+				enterkeyhint="search"
+			>
+			<ul class="suggestions" id="suggestions" role="listbox" aria-label="Sugerencias"></ul>
+		</div>
+
+		<p class="status" id="status" aria-live="polite"></p>
+
+		<div class="result" id="result">
+			<div class="guest-label">Invitación de</div>
+			<div class="guest-name" id="result-name"></div>
+			<div class="mesa-card">
+				<div class="mesa-label">Tu mesa</div>
+				<div class="mesa-number" id="result-mesa"></div>
+			</div>
+			<button type="button" class="btn-clear" id="btn-clear">Buscar otro nombre</button>
+		</div>
+
+		<p class="footer-note">Si no encuentras tu nombre, pregunta en recepción.</p>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script>
+		const SUPABASE_URL = 'https://pfhdmobkdmdckxshfbma.supabase.co';
+		const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmaGRtb2JrZG1kY2t4c2hmYm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDIyNzUsImV4cCI6MjA5MTUxODI3NX0.UzxC3xuQnYupDGjS5-R-zG-8jvdq6T7PP8oNfy_Wmvs';
+		const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+		const MAX_SUGGESTIONS = 8;
+
+		const searchEl = document.getElementById('guest-search');
+		const suggestionsEl = document.getElementById('suggestions');
+		const statusEl = document.getElementById('status');
+		const resultEl = document.getElementById('result');
+		const resultNameEl = document.getElementById('result-name');
+		const resultMesaEl = document.getElementById('result-mesa');
+		const btnClear = document.getElementById('btn-clear');
+
+		/** @type {{ nombre: string, mesa: string, norm: string }[]} */
+		let guests = [];
+		let activeIndex = -1;
+		let currentMatches = [];
+
+		function normalize(str) {
+			return String(str || '')
+				.normalize('NFD')
+				.replace(/[\u0300-\u036f]/g, '')
+				.toLowerCase()
+				.trim();
+		}
+
+		function escapeHtml(str) {
+			return String(str || '')
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
+		}
+
+		function setStatus(msg, type) {
+			statusEl.textContent = msg || '';
+			statusEl.className = 'status' + (type ? ' ' + type : '');
+		}
+
+		function hideResult() {
+			resultEl.classList.remove('visible');
+			btnClear.classList.remove('visible');
+		}
+
+		function showResult(guest) {
+			resultNameEl.textContent = guest.nombre;
+			resultMesaEl.textContent = guest.mesa;
+			resultEl.classList.remove('visible');
+			void resultEl.offsetWidth;
+			resultEl.classList.add('visible');
+			btnClear.classList.add('visible');
+			setStatus('');
+			closeSuggestions();
+			searchEl.blur();
+		}
+
+		function closeSuggestions() {
+			suggestionsEl.classList.remove('open');
+			suggestionsEl.innerHTML = '';
+			activeIndex = -1;
+			currentMatches = [];
+		}
+
+		function renderSuggestions(matches) {
+			currentMatches = matches;
+			activeIndex = -1;
+
+			if (!matches.length) {
+				closeSuggestions();
+				return;
+			}
+
+			suggestionsEl.innerHTML = matches.map((g, i) => `
+				<li role="option" data-index="${i}" id="sug-${i}">
+					${escapeHtml(g.nombre)}
+					<span class="hint">Mesa ${escapeHtml(g.mesa)}</span>
+				</li>
+			`).join('');
+			suggestionsEl.classList.add('open');
+		}
+
+		function filterGuests(query) {
+			const q = normalize(query);
+			if (!q) return [];
+
+			const parts = q.split(/\s+/).filter(Boolean);
+			return guests
+				.filter(g => parts.every(p => g.norm.includes(p)))
+				.slice(0, MAX_SUGGESTIONS);
+		}
+
+		function selectGuest(guest) {
+			searchEl.value = guest.nombre;
+			showResult(guest);
+		}
+
+		function highlightActive() {
+			const items = suggestionsEl.querySelectorAll('li');
+			items.forEach((li, i) => {
+				li.classList.toggle('active', i === activeIndex);
+			});
+			if (activeIndex >= 0 && items[activeIndex]) {
+				items[activeIndex].scrollIntoView({ block: 'nearest' });
+			}
+		}
+
+		async function loadGuests() {
+			setStatus('Cargando lista…', 'loading');
+			searchEl.disabled = true;
+
+			const { data, error } = await sb
+				.from('invitaciones_boda')
+				.select('nombre, mesa')
+				.not('mesa', 'is', null)
+				.order('nombre', { ascending: true });
+
+			searchEl.disabled = false;
+
+			if (error) {
+				setStatus('No se pudo cargar la lista. Revisa tu conexión.', 'error');
+				return;
+			}
+
+			guests = (data || [])
+				.filter(row => row.nombre && String(row.mesa).trim() !== '')
+				.map(row => ({
+					nombre: String(row.nombre).trim(),
+					mesa: String(row.mesa).trim(),
+					norm: normalize(row.nombre)
+				}));
+
+			if (!guests.length) {
+				setStatus('Las mesas se publicarán pronto.');
+				searchEl.disabled = true;
+				searchEl.placeholder = 'Próximamente';
+				return;
+			}
+
+			setStatus('');
+			searchEl.focus();
+		}
+
+		searchEl.addEventListener('input', function () {
+			hideResult();
+			const q = searchEl.value;
+			if (!q.trim()) {
+				closeSuggestions();
+				setStatus('');
+				return;
+			}
+
+			const matches = filterGuests(q);
+			if (!matches.length) {
+				closeSuggestions();
+				setStatus('No encontramos ese nombre. Prueba con otro.');
+				return;
+			}
+
+			setStatus('');
+			renderSuggestions(matches);
+		});
+
+		searchEl.addEventListener('keydown', function (e) {
+			if (!suggestionsEl.classList.contains('open')) {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					const matches = filterGuests(searchEl.value);
+					if (matches.length === 1) selectGuest(matches[0]);
+					else if (matches.length > 1) renderSuggestions(matches);
+				}
+				return;
+			}
+
+			if (e.key === 'ArrowDown') {
+				e.preventDefault();
+				activeIndex = Math.min(activeIndex + 1, currentMatches.length - 1);
+				highlightActive();
+			} else if (e.key === 'ArrowUp') {
+				e.preventDefault();
+				activeIndex = Math.max(activeIndex - 1, 0);
+				highlightActive();
+			} else if (e.key === 'Enter') {
+				e.preventDefault();
+				if (activeIndex >= 0 && currentMatches[activeIndex]) {
+					selectGuest(currentMatches[activeIndex]);
+				} else if (currentMatches.length === 1) {
+					selectGuest(currentMatches[0]);
+				} else if (currentMatches.length > 0) {
+					selectGuest(currentMatches[0]);
+				}
+			} else if (e.key === 'Escape') {
+				closeSuggestions();
+			}
+		});
+
+		suggestionsEl.addEventListener('click', function (e) {
+			const li = e.target.closest('li');
+			if (!li) return;
+			const idx = Number(li.getAttribute('data-index'));
+			if (currentMatches[idx]) selectGuest(currentMatches[idx]);
+		});
+
+		document.addEventListener('click', function (e) {
+			if (!e.target.closest('.search-wrap')) closeSuggestions();
+		});
+
+		btnClear.addEventListener('click', function () {
+			searchEl.value = '';
+			hideResult();
+			closeSuggestions();
+			setStatus('');
+			searchEl.focus();
+		});
+
+		loadGuests();
+	</script>
+</body>
+</html>

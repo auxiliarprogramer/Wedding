@@ -171,7 +171,8 @@
 			gap: 8px;
 		}
 
-		.guest-actions select {
+		.guest-actions select,
+		.guest-actions .mesa-input {
 			background: #1f2016;
 			border: 1px solid #6B7432;
 			color: #f0f0e8;
@@ -179,6 +180,19 @@
 			padding: 6px 8px;
 			font-size: 13px;
 			outline: none;
+		}
+
+		.guest-actions .mesa-input {
+			width: 72px;
+			text-align: center;
+		}
+
+		.mesa-label-inline {
+			font-size: 11px;
+			color: #888;
+			text-transform: uppercase;
+			letter-spacing: 0.06em;
+			margin-right: 2px;
 		}
 
 		.btn-save {
@@ -265,6 +279,7 @@
 				gap: 8px;
 			}
 			.guest-actions select { max-width: 110px; }
+			.guest-actions .mesa-input { width: 64px; }
 			.guest-badge { white-space: normal; padding: 4px 10px; font-size: 12px; }
 			.btn-refresh, .btn-sort { padding: 5px 10px; font-size: 12px; }
 			.summary-total { padding: 0 12px; justify-content: center; }
@@ -348,7 +363,7 @@
 			const orderBy = _sortOrder === 'fecha' ? 'fecha_confirmacion' : 'nombre';
 			const { data, error } = await sb
 				.from('invitaciones_boda')
-				.select('id, nombre, asistentes_confirmados, cupos_total, fecha_confirmacion')
+				.select('id, nombre, mesa, asistentes_confirmados, cupos_total, fecha_confirmacion')
 				.neq('asistentes_confirmados', 0)
 				.order(orderBy, { ascending: _sortOrder === 'nombre' });
 
@@ -373,6 +388,7 @@
 			listEl.innerHTML = data.map((row, i) => {
 				const current = Number(row.asistentes_confirmados) || 0;
 				const maxCupos = Math.max(Number(row.cupos_total) || current || 1, 1);
+				const mesaActual = row.mesa != null ? String(row.mesa) : '';
 				const fechaConfirmacion = row.fecha_confirmacion
 					? new Intl.DateTimeFormat('es-CO', {
 						timeZone: 'America/Bogota',
@@ -395,9 +411,12 @@
 						<div class="guest-name">${escapeHtml(row.nombre)}</div>
 						<div class="guest-count-label">Asistentes confirmados: <span>${escapeHtml(String(row.asistentes_confirmados))}</span> de ${escapeHtml(String(maxCupos))} cupos</div>
 						${fechaConfirmacion ? `<div class="guest-date-label">Confirmó el <span>${escapeHtml(fechaConfirmacion)}</span></div>` : ''}
+						<div class="guest-count-label">Mesa: <span>${mesaActual ? escapeHtml(mesaActual) : 'Sin asignar'}</span></div>
 					</div>
 					<div class="guest-badge">${escapeHtml(String(row.asistentes_confirmados))} 🎉</div>
 					<div class="guest-actions">
+						<span class="mesa-label-inline">Mesa</span>
+						<input type="text" class="mesa-input" id="mesa-${row.id}" data-id="${row.id}" data-current="${escapeHtml(mesaActual)}" value="${escapeHtml(mesaActual)}" placeholder="#" aria-label="Mesa de ${escapeHtml(row.nombre)}" maxlength="20">
 						<select class="guest-select" id="sel-${row.id}" data-id="${row.id}" data-current="${current}" aria-label="Asistentes de ${escapeHtml(row.nombre)}">
 							${options}
 						</select>
@@ -413,13 +432,16 @@
 			if (!id || _updatingIds.has(id)) return;
 
 			const selectEl = document.getElementById(`sel-${id}`);
+			const mesaEl = document.getElementById(`mesa-${id}`);
 			const statusEl = document.getElementById(`st-${id}`);
-			if (!selectEl || !statusEl) return;
+			if (!selectEl || !mesaEl || !statusEl) return;
 
 			const nuevoValor = Number(selectEl.value);
 			const valorActual = Number(selectEl.getAttribute('data-current'));
+			const nuevaMesa = mesaEl.value.trim();
+			const mesaActual = (mesaEl.getAttribute('data-current') || '').trim();
 
-			if (nuevoValor === valorActual) {
+			if (nuevoValor === valorActual && nuevaMesa === mesaActual) {
 				statusEl.className = 'guest-status';
 				statusEl.textContent = 'Sin cambios';
 				setTimeout(() => { statusEl.textContent = ''; }, 1200);
@@ -438,6 +460,7 @@
 				.update({
 					asistentes_confirmados: nuevoValor,
 					confirmado: nuevoValor > 0,
+					mesa: nuevaMesa || null,
 					fecha_confirmacion: new Date().toISOString()
 				})
 				.eq('id', id);
@@ -452,6 +475,7 @@
 			}
 
 			selectEl.setAttribute('data-current', String(nuevoValor));
+			mesaEl.setAttribute('data-current', nuevaMesa);
 			statusEl.className = 'guest-status ok';
 			statusEl.textContent = 'Guardado';
 
